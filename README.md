@@ -6,11 +6,9 @@ An example implementation of a "tls" API server for osquery (in `/api`), and a b
 
 ## How do I set it up?
 
-If you'd like to use the demo project as-is you'll need to set a few values in settings.py then deploy the application as you usually would for Django (for instance, you might like to use a WSGI server such as `waitress`).
+If you'd like to use the demo project as-is you'll need to set a few values in `settings.py` then deploy the application as you usually would for Django (for instance, you might like to use a WSGI server such as `waitress`). Most importantly the database connection (sqlite is fine), and the `OSQUERY_ENROLL_SECRET` settings will need to be changed.
 
 The only requirement is Django 1.11, though it will probably work on earlier Django versions.
-
-You'll need to set a few things in `settings.py`, most importantly the database connection (sqlite is fine), and the `OSQUERY_ENROLL_SECRET`.
 
 Once the application is deployed, create some Log Queries. A good start would be `select * from usb_devices`, but you can play with `osqeuryi` to find other suitable metrics to examine!
 
