@@ -35,4 +35,4 @@ Once `stunnel` is runnning then `osqueryd` may connect to `localhost` on port `4
 
 ## What is this for?
 
-Sometimes you just want to experiment with `osqueryd`
+Sometimes you just want to experiment with `osqueryd` reporting back to a central server, or you might want to build a highly specific service using osqueryd as a component of a bigger system. If you don't want to use a full package like [Doorman](https://github.com/mwielgoszewski/doorman) this code is probably a good starting point.
