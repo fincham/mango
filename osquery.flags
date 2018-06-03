@@ -1,0 +1,9 @@
+--tls_hostname=localhost:4433
+--tls_server_certs=test_server_ca.pem
+--config_plugin=tls
+--config_tls_endpoint=/osquery/config
+--config_refresh=30
+--logger_tls_endpoint=/osquery/logger
+--logger_plugin=tls
+--enroll_tls_endpoint=/osquery/enroll
+--enroll_secret_path=/etc/osquery/enroll_secret

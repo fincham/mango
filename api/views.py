@@ -15,6 +15,7 @@ import json
 import random
 import string
 import functools
+import hmac
 
 def decode_json_body(fn):
     """
@@ -61,7 +62,7 @@ def enroll(request, form):
     Called by osqueryd during initial configuration of a new node. Returns the node's unique access key, which will be used from then on.
     """
 
-    if form['enroll_secret'] == settings.OSQUERY_ENROLL_SECRET:
+    if hmac.compare_digest(form['enroll_secret'], settings.OSQUERY_ENROLL_SECRET):
         rand = random.SystemRandom();
         node_key = "".join(rand.choice(string.hexdigits) for _ in range(32)).lower() # generate a 128 bit key
         response = {
@@ -87,20 +88,16 @@ def config(request, form, host):
 
     response = {
         "schedule": {
-            "hotplatehosts_os-version": {
+            "mango_os-version": {
                 "query": "SELECT * FROM os_version;",
                 "interval": 10
             },
-            "hotplatehosts_system-info": {
+            "mango_system-info": {
                 "query": "SELECT * FROM system_info;",
                 "interval": 60,
                 "snapshot": True # this query is used as a "keepalive"
             },
-            # "hotplatehosts_deb-packages": { <-- not enabled in this demo
-            #    "query": "SELECT * FROM deb_packages;",
-            #    "interval": 10
-            # },
-            "hotplatehosts_osrelease": {
+            "mango_osrelease": {
                 "query": "select current_value from system_controls where name = 'kernel.osrelease';",
                 "interval": 10
             },
@@ -108,10 +105,11 @@ def config(request, form, host):
         "node_invalid": False
     }
 
-    for query in LogQuery.objects.all():
-       response['schedule']['hotplatehosts_db_%s' % slugify(query.name)] = {
+    for query in LogQuery.objects.filter(tags__in=host.tags.all()):
+       response['schedule']['mango_db_%s' % slugify(query.name)] = {
            "query": "%s;" % query.query,
-           "interval": query.interval
+           "interval": query.interval,
+           "snapshot": query.snapshot,
         }
 
     return JsonResponse(response)
@@ -135,35 +133,21 @@ def logger(request, form, host):
             recognised_action = False
             if entry_action == 'added':
                 entry_output = submitted_log_entry['columns']
-                if entry_name == "hotplatehosts_os-version":
+                if entry_name == "mango_os-version":
                     host.release = entry_output['version'].split()[-1].strip('()')
                     recognised_action = True
-                elif entry_name == "hotplatehosts_osrelease":
+                elif entry_name == "mango_osrelease":
                     host.architecture = entry_output['current_value'].split('-')[-1]
                     recognised_action = True
-                elif entry_name == "hotplatehosts_deb-packages":
-                    with transaction.atomic():
-                        try:
-                            Package.objects.create(name=entry_output['name'], host=host, version=entry_output['version'], architecture=entry_output['arch'])
-                        except IntegrityError: # ignore duplicates
-                            continue
-                    recognised_action = True
-            
-            elif entry_action == 'removed':
-                entry_output = submitted_log_entry['columns']
-                if entry_name == "hotplatehosts_deb-packages":
-                    recognised_action = True
-                    Package.objects.filter(name=entry_output['name'], host=host, version=entry_output['version'], architecture=entry_output['arch']).delete()
-            
             elif entry_action == 'snapshot': # full snapshot query
                 entry_outputs = submitted_log_entry['snapshot']
                 for entry_output in entry_outputs:
-                    if entry_name == "hotplatehosts_system-info":
+                    if entry_name == "mango_system-info":
                         host.cpu = entry_output['cpu_brand']
                         host.ram = int(entry_output['physical_memory'])
             
-            if recognised_action == False and entry_action in ('added', 'removed') and entry_name.startswith('hotplatehosts_db_'): # just log in to the db
-                    log_entry = LogEntry(name=entry_name[17:], action=entry_action, output=repr(entry_output), host=host)
+            if recognised_action == False and entry_action in ('added', 'removed') and entry_name.startswith('mango_db_'): # just log to the db
+                    log_entry = LogEntry(name=entry_name[len('mango_db_'):], action=entry_action, output=repr(entry_output), host=host)
                     log_entry.save()
 
     host.save()
