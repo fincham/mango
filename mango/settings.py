@@ -37,7 +37,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'osquerycontrol.urls'
+ROOT_URLCONF = 'mango.urls'
 
 TEMPLATES = [
     {
@@ -55,7 +55,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'osquerycontrol.wsgi.application'
+WSGI_APPLICATION = 'mango.wsgi.application'
 
 
 # Database
